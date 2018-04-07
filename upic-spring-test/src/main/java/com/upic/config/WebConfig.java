@@ -16,7 +16,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {
         UrlPathHelper urlPathHelper = new UrlPathHelper();
-        urlPathHelper.setRemoveSemicolonContent(false);
+        urlPathHelper.setRemoveSemicolonContent(false); //设置为false
         configurer.setUrlPathHelper(urlPathHelper);
     }
 }
