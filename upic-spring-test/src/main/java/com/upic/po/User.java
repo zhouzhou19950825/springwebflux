@@ -23,6 +23,8 @@ public class User {
 	public void setStuNum(String stuNum) {
 		this.stuNum = stuNum;
 	}
-	
-	
+	@Override
+	public String toString() {
+		return "User [id=" + id + ", stuName=" + stuName + ", stuNum=" + stuNum + "]";
+	}
 }
