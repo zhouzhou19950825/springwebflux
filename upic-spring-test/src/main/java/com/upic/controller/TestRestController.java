@@ -3,8 +3,7 @@ package com.upic.controller;
 import java.util.List;
 import java.util.Map;
 
-import javax.validation.Valid;
-
+import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +12,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.SessionAttribute;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebSession;
 
 import com.upic.po.User;
 
@@ -175,5 +177,31 @@ public class TestRestController {
 		return petMono.map(x->x.toString()).onErrorResume(ex -> {
 			return Mono.create(x -> x.success(ex.getMessage()));
 		});
+	}
+	
+//	/**
+//	 * 
+//	 * @param user
+//	 * @return
+//	 */
+//	@GetMapping("/user/getSessionUser")
+//	public Object returnUser(ModelMap model) {
+//		System.out.println(model.get("user"));
+//		return model.get("user");
+//	}
+	/**
+	 * @SessionAttribute WebSession
+	 * @param user
+	 * @param session
+	 * @return
+	 */
+	@GetMapping("/setusersession")
+	public User addUserToSession( User user) {
+		return user;
+	}
+	
+	@GetMapping("/getUserSession")
+	public User handle(@SessionAttribute User user) {
+		return user;
 	}
 }
