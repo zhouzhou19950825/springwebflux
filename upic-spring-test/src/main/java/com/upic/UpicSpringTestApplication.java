@@ -24,8 +24,4 @@ public class UpicSpringTestApplication {
 		SpringApplication.run(UpicSpringTestApplication.class, args);
 	}
 
-	// @Bean
-	// public RequestMappingHandlerMapping register() {
-	// return new MyRequestMappingHandler();
-	// }
 }
