@@ -1,20 +1,34 @@
 package com.upic.controller;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ZeroCopyHttpOutputMessage;
+import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.http.codec.multipart.Part;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.SessionAttribute;
-import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.WebSession;
 
 import com.upic.po.User;
 
@@ -149,46 +163,49 @@ public class TestRestController {
 	}
 
 	/**
-	 * url:http://localhost:8088/user/1/pets/a/edit?id=aa&stuName=dtz //error
-	 * Spring WebFlux支持模型中的反应类型，例如 Mono<Account>或io.reactivex.Single<Account>
+	 * url:http://localhost:8088/user/1/pets/a/edit?id=aa&stuName=dtz //error Spring
+	 * WebFlux支持模型中的反应类型，例如 Mono<Account>或io.reactivex.Single<Account>
+	 * 
 	 * @param petMono
 	 * @return
 	 */
 	@GetMapping("/user/{id}/pets/{stuName}/edit")
-	public Mono<String> processSubmit( @ModelAttribute("user") Mono<User> petMono) {
-		return petMono.map(x->x.toString()).onErrorResume(ex -> {
+	public Mono<String> processSubmit(@ModelAttribute("user") Mono<User> petMono) {
+		return petMono.map(x -> x.toString()).onErrorResume(ex -> {
 			return Mono.create(x -> x.success(ex.getMessage()));
 		});
 	}
-	
+
 	/**
 	 * url:http://localhost:8088/user/edit?id=aa&stuName=dtz
 	 * 测试BindingResult在Mono修饰的时候是否有用
+	 * 
 	 * @param petMono
 	 * @param result
 	 * @return
 	 */
-	//error 无法注入Failed to resolve argument 1 of type 'org.springframework.validation.BindingResult
+	// error 无法注入Failed to resolve argument 1 of type
+	// 'org.springframework.validation.BindingResult
 	@GetMapping("/user/edit")
-	public Mono<String> processSubmit01( @ModelAttribute("user") Mono<User> petMono, BindingResult result) {
+	public Mono<String> processSubmit01(@ModelAttribute("user") Mono<User> petMono, BindingResult result) {
 		if (result.hasErrors()) {
-			return Mono.create(x->x.success(result.getAllErrors().toString()));
+			return Mono.create(x -> x.success(result.getAllErrors().toString()));
 		}
-		return petMono.map(x->x.toString()).onErrorResume(ex -> {
+		return petMono.map(x -> x.toString()).onErrorResume(ex -> {
 			return Mono.create(x -> x.success(ex.getMessage()));
 		});
 	}
-	
-//	/**
-//	 * 
-//	 * @param user
-//	 * @return
-//	 */
-//	@GetMapping("/user/getSessionUser")
-//	public Object returnUser(ModelMap model) {
-//		System.out.println(model.get("user"));
-//		return model.get("user");
-//	}
+
+	// /**
+	// *
+	// * @param user
+	// * @return
+	// */
+	// @GetMapping("/user/getSessionUser")
+	// public Object returnUser(ModelMap model) {
+	// System.out.println(model.get("user"));
+	// return model.get("user");
+	// }
 	/**
 	 * @SessionAttribute WebSession
 	 * @param user
@@ -196,12 +213,72 @@ public class TestRestController {
 	 * @return
 	 */
 	@GetMapping("/setusersession")
-	public User addUserToSession( User user) {
+	public User addUserToSession(User user) {
 		return user;
 	}
-	
+
 	@GetMapping("/getUserSession")
 	public User handle(@SessionAttribute User user) {
 		return user;
+	}
+
+	/**
+	 * 测试文件上传 需要第三方库来解析
+	 * 
+	 * @param form
+	 * @param errors
+	 * @return
+	 * @throws IOException
+	 *             MyForm form
+	 */
+	// @PostMapping("/form")
+	// public String handleFormUpload(MultipartFile file, BindingResult errors)
+	// throws IOException {
+	// // ...
+	// try (BufferedOutputStream stream = new BufferedOutputStream(
+	// new FileOutputStream(new File("img/" + file.getOriginalFilename())));) {
+	// byte[] inputStream = file.getBytes();
+	// stream.write(inputStream);
+	// } catch (Exception e) {
+	// }
+	// return "success";
+	// }
+	//
+	/**
+	 * webflux文件分解在一个个Part当中->FilePart等
+	 * 
+	 * @param metadata
+	 * @param file
+	 * @return
+	 * @throws IOException
+	 */
+	@PostMapping("/formdata")
+	public String handle(@RequestPart(value = "meta-data", required = false) Part metadata,
+			@RequestPart("file") FilePart file) throws IOException {
+		// ...
+		System.out.println(file.filename());
+		Path tempFile = Files.createTempFile("test", file.filename());
+
+		// NOTE 方法一
+		AsynchronousFileChannel channel = AsynchronousFileChannel.open(tempFile, StandardOpenOption.WRITE);
+		DataBufferUtils.write(file.content(), channel, 0).doOnComplete(() -> {
+			System.out.println("finish");
+		}).subscribe();
+		// NOTE 方法二
+		// filePart.transferTo(tempFile.toFile());
+
+		System.out.println(tempFile.toString());
+		return file.filename();
+	}
+
+	@GetMapping("/download")
+	public Mono<Void> downloadByWriteWith(ServerHttpResponse response) throws IOException {
+		ZeroCopyHttpOutputMessage zeroCopyResponse = (ZeroCopyHttpOutputMessage) response;
+		response.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=parallel.png");
+		response.getHeaders().setContentType(MediaType.IMAGE_PNG);
+
+		Resource resource = new ClassPathResource("parallel.png");
+		File file = resource.getFile();
+		return zeroCopyResponse.writeWith(file, 0, file.length());
 	}
 }
