@@ -6,11 +6,18 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.validation.Valid;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -18,12 +25,14 @@ import org.springframework.http.ZeroCopyHttpOutputMessage;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.http.codec.multipart.Part;
 import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.util.MultiValueMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -32,6 +41,7 @@ import org.springframework.web.bind.annotation.SessionAttribute;
 
 import com.upic.po.User;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -281,4 +291,90 @@ public class TestRestController {
 		File file = resource.getFile();
 		return zeroCopyResponse.writeWith(file, 0, file.length());
 	}
+
+	/**
+	 * 要反序列化原始部分内容，例如JSON（类似于@RequestBody），只需声明一个具体的目标Object，而不是Part
+	 * 
+	 * @param user
+	 * @return
+	 */
+	// @PostMapping("/partUser")
+	// public String handleReq(@RequestPart("user") Part user/User user) { //It's
+	// error can not parser
+	// // ...
+	// return user.toString();
+	// }
+	@PostMapping("/partUser")
+	public String handleReq(User user) { // default @RequestBody
+		// ...
+		return user.toString();
+	}
+
+	/**
+	 * @RequestPart可以结合使用javax.validation.Valid，或Spring的 @Validated注释，
+	 *                                                   这会导致应用标准Bean验证。默认情况下，验证错误会导致一个WebExchangeBindException变成400（BAD_REQUEST）响应。
+	 *                                                   或者，验证错误可以通过Errors或BindingResult参数在控制器内本地处理
+	 *                                                   Part:字段属性存储单位对象，存储在MultiValueMap<String,
+	 *                                                   Part>对象当中
+	 * @param user
+	 * @param result
+	 * @return
+	 */
+	@PostMapping("/handleValid")
+	public Flux<String> handleValid(@Valid @RequestPart("test") Part part) {
+		Flux<DataBuffer> content = part.content();
+		return Flux.create(x -> {
+			x.next(content.toStream().map(m -> new String(m.asByteBuffer().array())).findFirst().get());
+			x.complete();
+		});
+		// ...
+		// return part.name();
+	}
+
+	/**
+	 * webflux 多参数封装
+	 * 
+	 * @param parts
+	 * @return
+	 */
+	@PostMapping("/handleMultiPart")
+	public Map<String, String> handleMultiPart(@RequestBody Mono<MultiValueMap<String, Part>> parts) {
+		// ...
+		Map<String, String> maps = new HashMap<>();
+		MultiValueMap<String, Part> block = parts.block();
+		block.forEach((x, y) -> {
+			System.out.println("key:" + x);
+			System.out.println("value:" + y.size());
+			System.out.println("value:" + y.get(0));
+			// y.get(0).content().toStream().map(m -> new
+			// String(m.asByteBuffer().array())).findFirst().get());
+			Stream<DataBuffer> stream = y.get(0).content().toStream();
+			List<String> collect = stream.map(m -> new String(m.asByteBuffer().array())).collect(Collectors.toList());
+			// collect.stream().forEach(System.out::println);
+			maps.put(x, collect.get(0));
+		});
+		return maps;
+	}
+
+	// @PostMapping("/handleMultiPart")
+	// public MultiValueMap<String, Part> handleMultiPart(@RequestBody
+	// MultiValueMap<String, Part> parts) {
+	// // ...
+	//// MultiValueMap<String, Part> block = parts.block();
+	// return parts;
+	// }
+	@PostMapping("/handleFlux")
+	public List<Map<String, List<String>>> handleFlux(@RequestBody Flux<Part> parts) {
+		List<Part> block = parts.collectList().block();
+		List<Map<String, List<String>>> list = new ArrayList<>();
+		block.forEach(x -> {
+			List<String> collect = x.content().toStream().map(m -> new String(m.asByteBuffer().array()))
+					.collect(Collectors.toList());
+			Map<String, List<String>> maps = new HashMap<>();
+			maps.put(x.name(), collect);
+			list.add(maps);
+		});
+		return list;
+	}
+
 }
