@@ -12,6 +12,8 @@ import org.springframework.web.reactive.config.EnableWebFlux;
  * MVC应用程序，这不是您想要的。删除这些依赖关系 删除@EnableWebFlux，因为它禁用Spring Boot中的WebFlux自动配置
  * 删除@EnableWebFluxSecurity，因为它已经由Spring Boot完成了
  * 
+ * 
+ * spring webflux如果访问url不存在，则返回请求的url路径
  * @author dtz
  * @date 2018年4月9日 Email upicdtz@qq.com
  */

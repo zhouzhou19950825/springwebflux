@@ -19,12 +19,14 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ZeroCopyHttpOutputMessage;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.http.codec.multipart.Part;
 import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.ui.Model;
 import org.springframework.util.MultiValueMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -34,11 +36,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.SessionAttribute;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.upic.po.User;
 
 import reactor.core.publisher.Flux;
@@ -227,10 +230,10 @@ public class TestRestController {
 		return user;
 	}
 
-	@GetMapping("/getUserSession")
-	public User handle(@SessionAttribute User user) {
-		return user;
-	}
+	// @GetMapping("/getUserSession")
+	// public User handle(@SessionAttribute User user) {
+	// return user;
+	// }
 
 	/**
 	 * 测试文件上传 需要第三方库来解析
@@ -377,4 +380,123 @@ public class TestRestController {
 		return list;
 	}
 
+	/**
+	 * 使用@RequestBody注释通过HttpMessageReader将请求主体读取并反序列化成Object
+	 * 
+	 * @param user
+	 * @return
+	 */
+	@GetMapping("/geusers")
+	public User handle(@RequestBody User user) {
+		return user;
+	}
+
+	/**
+	 * 与Spring MVC不同的是，在WebFlux中，@RequestBody方法参数支持响应类型和完全非阻塞读取和（客户端到服务器）流
+	 * 
+	 * @param account
+	 */
+	@PostMapping("/accounts")
+	public User handle(@RequestBody Mono<User> user) {
+		return user.block();
+	}
+
+	@PostMapping("/geusersreserror")
+	public String handle(@Valid @RequestBody User user, BindingResult result) {
+		if (result.hasErrors()) {
+			return result.getAllErrors().toString();
+		}
+		return user.toString();
+	}
+
+	@PostMapping("/entity")
+	public String handleHttpEntity(HttpEntity<User> entity) {
+		// ...
+		return entity.toString();
+	}
+
+	@GetMapping("/user")
+	// @JsonView(User.father.class)
+	@JsonView(User.son.class)
+	public User getUser() {
+		return new User(1L, "a", "eric", "7!jd#h23");
+	}
+
+	/**
+	 * @ModelAttribute ：修饰在方法上执行在requestMapping之前，初始化数据放在model中 model 存储多个数据
+	 * @param number
+	 * @param model
+	 */
+	@ModelAttribute
+	// @GetMapping("getModel")
+	public void populateModel(@RequestParam String number, Model model) {
+		// model.addAttribute(accountRepository.findAccount(number));
+		// model.addAttribute(new User(1L,"number","a","b"));
+		// add more ...
+	}
+
+	/**
+	 * 增加单个数据
+	 * 
+	 * @param number
+	 * @return
+	 */
+	// @ModelAttribute("user")
+	// public User addAccount(@RequestParam String number) {
+	// return new User(1L,number,"a","b");
+	// }
+
+	/**
+	 * 
+	 * @param numbber
+	 * @param model
+	 * @return
+	 */
+	@GetMapping("getPreModel")
+	public User getUser(String numbber, Model model) {
+		return (User) model.asMap().get("user");
+	}
+
+	/**
+	 * 此外，任何具有反应型包装的模型属性都会在视图呈现之前解析为其实际值（并更新模型）。 不知道为什么 Post不行
+	 * 
+	 * @param number
+	 * @param model
+	 * @return
+	 */
+	@ModelAttribute("user")
+	public Mono<User> addData(@RequestParam String number, Model model) {
+		return Mono.create(x -> {
+			x.success(new User(1L, number, "c", "d"));
+		});
+		// model.addAttribute("user", accountMono);
+	}
+
+	/**
+	 * POST请求不行
+	 * 
+	 * @param user
+	 * @param errors
+	 * @return
+	 */
+	@GetMapping("/getMonoModel")
+	public User handles(@ModelAttribute User user, BindingResult errors) {
+		if (errors.hasErrors()) {
+
+		}
+		return user;
+	}
+
+	/**
+	 * @ModelAttribute 也可以用作方法的方法级注释，@RequestMapping 
+	 * 在这种情况下方法的返回值@RequestMapping被解释为模型属性。这通常不是必需的，
+	 * 因为它是HTML控制器中的默认行为，除非返回值是否String会被视为视图名称。
+	 * @ModelAttribute也可以帮助定制模型属性名称：
+	 */
+	// @GetMapping("/accounts/{id}")
+	// @ModelAttribute("myAccount")
+	// public User handleUser() {
+	// // ...
+	// return account;
+	// }
 }
