@@ -6,7 +6,9 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +17,7 @@ import java.util.stream.Stream;
 
 import javax.validation.Valid;
 
+import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -29,14 +32,15 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.ui.Model;
 import org.springframework.util.MultiValueMap;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -427,13 +431,13 @@ public class TestRestController {
 	 * @param number
 	 * @param model
 	 */
-	@ModelAttribute
+	// @ModelAttribute
 	// @GetMapping("getModel")
-	public void populateModel(@RequestParam String number, Model model) {
-		// model.addAttribute(accountRepository.findAccount(number));
-		// model.addAttribute(new User(1L,"number","a","b"));
-		// add more ...
-	}
+	// public void populateModel(@RequestParam String number, Model model) {
+	// model.addAttribute(accountRepository.findAccount(number));
+	// model.addAttribute(new User(1L,"number","a","b"));
+	// add more ...
+	// }
 
 	/**
 	 * 增加单个数据
@@ -465,13 +469,29 @@ public class TestRestController {
 	 * @return
 	 */
 	@ModelAttribute("user")
-	public Mono<User> addData(@RequestParam String number, Model model) {
+	// @ModelAttribute
+	public Mono<User> addData(@RequestParam(required = false) String number, Model model) {
 		return Mono.create(x -> {
 			x.success(new User(1L, number, "c", "d"));
 		});
 		// model.addAttribute("user", accountMono);
 	}
 
+	@ModelAttribute("user")
+	public Mono<User> addData2(@RequestParam(required = false) String number, Model model) {
+		return Mono.create(x -> {
+			x.success(new User(1L, number, "c", "d"));
+		});
+		// model.addAttribute("user", accountMono);
+	}
+
+	// @ModelAttribute("user")
+	// public Mono<User> addData1(@RequestParam Long id, Model model) {
+	// return Mono.create(x -> {
+	// x.success(new User(id, "1422110108", "c", "d"));
+	// });
+	// // model.addAttribute("user", accountMono);
+	// }
 	/**
 	 * POST请求不行
 	 * 
@@ -479,8 +499,8 @@ public class TestRestController {
 	 * @param errors
 	 * @return
 	 */
-	@GetMapping("/getMonoModel")
-	public User handles(@ModelAttribute User user, BindingResult errors) {
+	@PostMapping("/getMonoModel")
+	public User handles(@ModelAttribute("user") User user, BindingResult errors) {
 		if (errors.hasErrors()) {
 
 		}
@@ -488,15 +508,26 @@ public class TestRestController {
 	}
 
 	/**
-	 * @ModelAttribute 也可以用作方法的方法级注释，@RequestMapping 
-	 * 在这种情况下方法的返回值@RequestMapping被解释为模型属性。这通常不是必需的，
-	 * 因为它是HTML控制器中的默认行为，除非返回值是否String会被视为视图名称。
-	 * @ModelAttribute也可以帮助定制模型属性名称：
+	 * @ModelAttribute 也可以用作方法的方法级注释，@RequestMapping
+	 *                 在这种情况下方法的返回值@RequestMapping被解释为模型属性。这通常不是必需的，
+	 *                 因为它是HTML控制器中的默认行为，除非返回值是否String会被视为视图名称。 @ModelAttribute也可以帮助定制模型属性名称：
 	 */
-	// @GetMapping("/accounts/{id}")
-	// @ModelAttribute("myAccount")
-	// public User handleUser() {
-	// // ...
-	// return account;
-	// }
+	@GetMapping("/accounts/{id}")
+	@ModelAttribute("/page/index.html")
+	public User handleUser(@PathVariable Long id) {
+		// ...
+		return new User(id, "1422110108", "c", "d");
+	}
+
+	@InitBinder
+	public void initBinder(WebDataBinder binder) {
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		dateFormat.setLenient(false);
+		binder.registerCustomEditor(Date.class, new CustomDateEditor(dateFormat, false));
+	}
+	@PostMapping("/getUserDate")
+	public User handleUserDate( User user) {
+		// ...
+		return user;
+	}
 }

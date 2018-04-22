@@ -1,5 +1,7 @@
 package com.upic.po;
 
+import java.util.Date;
+
 import com.fasterxml.jackson.annotation.JsonView;
 
 public class User {
@@ -14,6 +16,8 @@ public class User {
 	private String stuNum;
 	@JsonView(father.class)
 	private String sex;
+	private Date birthday;
+	
 	public Long getId() {
 		return id;
 	}
@@ -52,6 +56,11 @@ public class User {
 		this.stuNum = stuNum;
 		this.sex = sex;
 	}
-	
+	public Date getBirthday() {
+		return birthday;
+	}
+	public void setBirthday(Date birthday) {
+		this.birthday = birthday;
+	}
 	
 }
