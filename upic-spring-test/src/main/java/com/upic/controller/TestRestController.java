@@ -25,6 +25,7 @@ import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.ZeroCopyHttpOutputMessage;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.http.codec.multipart.Part;
@@ -34,6 +35,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -519,15 +521,48 @@ public class TestRestController {
 		return new User(id, "1422110108", "c", "d");
 	}
 
+	/**
+	 * 他的执行顺序比全局的后，但是比其他全局或者局部的其他方法先
+	 * 全局的先执行，然后再执行局部@InitBinder
+	 * @param binder
+	 */
 	@InitBinder
 	public void initBinder(WebDataBinder binder) {
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		dateFormat.setLenient(false);
 		binder.registerCustomEditor(Date.class, new CustomDateEditor(dateFormat, false));
 	}
+
+	/**
+	 * 当Formatter通过共享使用基于设置的设置时
+	 * FormattingConversionService，您可以重新使用相同的方法并注册控制器特定Formatter的设置
+	 * 
+	 * @param binder
+	 * @return
+	 */
+	// @InitBinder
+	// protected void initBinder(WebDataBinder binder) {
+	// binder.addCustomFormatter(new DateFormatter("yyyy-MM-dd"));
+	// }
+
+	/**
+	 * 
+	 * @param user
+	 * @return
+	 */
 	@PostMapping("/getUserDate")
-	public User handleUserDate( User user) {
+	public User handleUserDate(User user) {
 		// ...
 		return user;
 	}
+	/**
+	 * 测试异常
+	 * @return
+	 */
+	@GetMapping("/getResultBy")
+	public Long returnData() {
+		return 1L/0;
+	}
+	
+	 
 }

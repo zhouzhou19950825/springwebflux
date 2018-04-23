@@ -24,6 +24,7 @@ public class UpicSpringTestApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(UpicSpringTestApplication.class, args);
+//		System.out.println(1/0);
 	}
 
 }
