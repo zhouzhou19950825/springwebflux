@@ -1,10 +1,11 @@
 package com.upic.po;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonView;
 
-public class User {
+public class User implements Serializable{
 
 	public interface father{}
 	public interface son extends father{}
