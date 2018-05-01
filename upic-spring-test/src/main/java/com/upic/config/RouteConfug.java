@@ -17,15 +17,17 @@ import com.upic.service.UserService;
 
 @Configuration
 public class RouteConfug {
-	
+
 	@Autowired
 	PersonHandler handler;
+
 	@Bean
 	public RouterFunction<ServerResponse> moreMethod() {
 		RouterFunction<ServerResponse> route = RouterFunctions
 				.route(GET("/person/{id}").and(accept(APPLICATION_JSON)), handler::getPerson)
 				.andRoute(GET("/person").and(accept(APPLICATION_JSON)), handler::listPeople)
-				.andRoute(GET("/personadd"), handler::createPerson);
+				.andRoute(POST("/person"), handler::createPerson)
+				.andRoute(GET("/getJsonPerson/{id}").and(accept(APPLICATION_JSON)), handler::getJsonPerson);
 
 		return route;
 	}
