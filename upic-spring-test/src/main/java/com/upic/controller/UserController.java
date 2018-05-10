@@ -1,5 +1,7 @@
 package com.upic.controller;
 
+import java.util.Date;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,5 +31,8 @@ public class UserController {
 			x.complete();
 		});
 	}
-
+	@GetMapping("/getDate")
+	public Date getDate(Date date) {
+		return date;
+	}
 }
