@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import com.upic.config.format.ClassValidator;
 import com.upic.po.User;
 
 import reactor.core.publisher.Mono;
@@ -56,6 +57,7 @@ public class AdvaniceController {
 	public void initBinder(WebDataBinder binder) {
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		dateFormat.setLenient(false);
+		binder.addValidators(new ClassValidator());
 		binder.registerCustomEditor(Date.class, new CustomDateEditor(dateFormat, false));
 	}
 }
