@@ -7,6 +7,7 @@ import org.springframework.validation.Validator;
 import org.springframework.web.reactive.accept.RequestedContentTypeResolverBuilder;
 import org.springframework.web.reactive.config.CorsRegistry;
 import org.springframework.web.reactive.config.EnableWebFlux;
+import org.springframework.web.reactive.config.PathMatchConfigurer;
 import org.springframework.web.reactive.config.ViewResolverRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 
@@ -78,4 +79,11 @@ public class WebConfig implements WebFluxConfigurer {
 	@Override
 	public void configureViewResolvers(ViewResolverRegistry registry) {
 	}
+	/**
+	 * 文档configurePathMatch错误，应修改configurePathMatching
+	 */
+	@Override
+    public void configurePathMatching(PathMatchConfigurer configurer) {
+        // ...
+    }
 }
