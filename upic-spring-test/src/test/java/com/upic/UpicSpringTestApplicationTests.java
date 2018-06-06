@@ -187,19 +187,19 @@ public class UpicSpringTestApplicationTests {
 	 */
 	@Test
 	public void testMultipart() {
-		CaseIn in = new CaseIn();
-		in.setContent("print(\"1\")");
-		in.setTime(5L);
+//		CaseIn in = new CaseIn();
+//		in.setContent("print(\"1\")");
+//		in.setTime(5L);
 		MultipartBodyBuilder builder = new MultipartBodyBuilder();
-		builder.part("fieldPart", "fieldValue");
-		builder.part("filePart", new FileSystemResource("...logo.png"));
-		builder.part("jsonPart", in);
+		builder.part("username", "dtz");
+		builder.part("file", new FileSystemResource("pom.xml"));
+//		builder.part("jsonPart", in);
 
 		MultiValueMap<String, HttpEntity<?>> parts = builder.build();
-		WebClient client = WebClient.create("http://192.144.140.169:8081");
-		Mono<ResultData> result = client.post().uri("/pycheck")
+		WebClient client = WebClient.create("http://localhost:8081");
+		Mono<String> result = client.post().uri("/upload")
 				.syncBody(parts).retrieve()
-				.bodyToMono(ResultData.class);
+				.bodyToMono(String.class);
 		System.out.println(result.block().toString());
 	}
 
